@@ -2,19 +2,27 @@ import audioconf
 from recorder import record_sound
 from transmission import write_file
 from encryption import encrypt, rsa_key_from_file
+from decryption import decrypt
 
 import sys
 
 def main(filename, pub_key_file, seconds):
     audioconf.init()
-    pub_key = rsa_key_from_file(pub_key_file)
+
+    key = rsa_key_from_file(pub_key_file)
     data = record_sound(seconds)
-    enc_data = encrypt(pub_key, data)
+    enc_data = encrypt(key, data)
+    dec_data = decrypt(key, enc_data)
+
     write_file(data, filename + '.wav')
     write_file(enc_data, filename + '.enc.wav')
+    write_file(dec_data, filename + '.dec.wav')
+
     audioconf.terminate()
     zeroes, ones = count_bin(enc_data)
+
     print(f'0: {zeroes}, 1: {ones}')
+    print(f'data == dec_data: {data == dec_data}')
 
 def count_bin(data):
     zeroes = ones = 0

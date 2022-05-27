@@ -1,31 +1,7 @@
-from Crypto.Cipher import PKCS1_OAEP as RSACipher, AES
-from Crypto.PublicKey import RSA
-from Crypto.Hash import SHA256, SHAKE256
+from cryptoutils import *
 from Crypto.Random import get_random_bytes
 from Crypto.Util.number import long_to_bytes
-
 from functools import cache
-from typing import NamedTuple
-
-AES_KEY_LEN = 32
-AES_TAG_LENGTH = 16
-AES_NONCE_LEN = 16
-RSA_HASH_LEN = 16
-SHA256_HASH_LEN = 32
-
-def generate_rsa_key(key_length):
-    return RSA.generate(key_length)
-
-def rsa_key_from_file(filename):
-    with open(filename) as f:
-        key = RSA.importKey(f.read())
-    return key
-
-def rsa_key_hash(rsa_key):
-    hash_obj = SHAKE256.new()
-    for integer in (rsa_key.n, rsa_key.e):
-        hash_obj.update(long_to_bytes(integer))
-    return hash_obj.read(RSA_HASH_LEN)
 
 def get_max_payload_size(rsa_key):
     modulo = len(long_to_bytes(rsa_key.n))
@@ -55,7 +31,7 @@ def generate_aes_key(pub_key, length):
     return key, rsa_encode(pub_key, key)
 
 def aes_encode(symm_key, data):
-    cipher = AES.new(symm_key, AES.MODE_EAX, mac_len=AES_TAG_LENGTH)
+    cipher = AES.new(symm_key, AES.MODE_EAX, mac_len=AES_TAG_LEN)
     nonce = cipher.nonce
     ciphertext, tag = cipher.encrypt_and_digest(data)
     return b''.join((nonce, tag, ciphertext))
