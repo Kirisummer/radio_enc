@@ -1,26 +1,20 @@
-import pyaudio
-
-FORMAT = pyaudio.paInt16
-CHUNK = 1024
-CHANNELS = 1
-SAMPLE_RATE = 44100
+import audioconf
 
 def record_sound(seconds):
-    p = pyaudio.PyAudio()
-    stream = p.open(format=FORMAT,
-                    channels=CHANNELS,
-                    rate=SAMPLE_RATE,
-                    input=True,
-                    output=False,
-                    frames_per_buffer=CHUNK)
+    stream = audioconf.PYAUDIO.open(format=audioconf.FORMAT,
+                                    channels=audioconf.CHANNELS,
+                                    rate=audioconf.SAMPLE_RATE,
+                                    input=True,
+                                    output=False,
+                                    frames_per_buffer=audioconf.CHUNK)
     frames = []
     print('Recording start')
-    for i in range(int(SAMPLE_RATE / CHUNK * seconds)):
-        data = stream.read(CHUNK)
+    record_loops = audioconf.SAMPLE_RATE * seconds // audioconf.CHUNK
+    for i in range(record_loops):
+        data = stream.read(audioconf.CHUNK)
         frames.append(data)
     print('Recording end')
     stream.stop_stream()
     stream.close()
-    p.terminate()
     return b''.join(frames)
 

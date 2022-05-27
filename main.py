@@ -1,3 +1,4 @@
+import audioconf
 from recorder import record_sound
 from transmission import write_file
 from encryption import encrypt, rsa_key_from_file
@@ -5,11 +6,13 @@ from encryption import encrypt, rsa_key_from_file
 import sys
 
 def main(filename, pub_key_file, seconds):
+    audioconf.init()
     pub_key = rsa_key_from_file(pub_key_file)
     data = record_sound(seconds)
     enc_data = encrypt(pub_key, data)
     write_file(data, filename + '.wav')
     write_file(enc_data, filename + '.enc.wav')
+    audioconf.terminate()
     zeroes, ones = count_bin(enc_data)
     print(f'0: {zeroes}, 1: {ones}')
 
