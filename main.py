@@ -1,18 +1,21 @@
 import audioconf
 from recorder import record_sound
 from transmission import write_file
-from encryption import encrypt, rsa_key_from_file
-from decryption import decrypt
+from ciphers import Rsa, Aes, Salsa20, SHA256
+from encryption import encrypt, decrypt
 
 import sys
 
-def main(filename, pub_key_file, seconds):
+def main(filename, seconds):
     audioconf.init()
 
-    key = rsa_key_from_file(pub_key_file)
+    rsa = Rsa(Rsa.KeyLen.Rsa2048, SHA256)
+    key = rsa.generate_key()
+    ciphers = Aes(Aes.KeyLen.AES_256), Salsa20(Salsa20.KeyLen.B32)
+
     data = record_sound(seconds)
-    enc_data = encrypt(key, data)
-    dec_data = decrypt(key, enc_data)
+    enc_data = encrypt(rsa, key, rsa.hash_key, ciphers, data)
+    dec_data = decrypt(rsa, key, rsa.hash_key, ciphers, enc_data)
 
     write_file(data, filename + '.wav')
     write_file(enc_data, filename + '.enc.wav')
@@ -35,4 +38,4 @@ def count_bin(data):
     return zeroes, ones
 
 if __name__ == '__main__':
-    main(sys.argv[1], sys.argv[2], int(sys.argv[3]))
+    main(sys.argv[1], int(sys.argv[2]))

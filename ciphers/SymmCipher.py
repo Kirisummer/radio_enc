@@ -6,7 +6,6 @@ from .Cipher import Cipher
 @dataclass
 class SymmCipher(Cipher):
     key_len: int
-    enc_key_len: int
     nonce_len: int
 
     def generate_key(self):

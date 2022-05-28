@@ -6,13 +6,16 @@ from .cryptoutils import partition
 
 class Aes(SymmCipher):
     class KeyLen(Enum):
-        AES_128 = (16, 128, 16)
-        AES_192 = (24, 128, 16)
-        AES_256 = (32, 128, 16)
+        AES_128 = (16, 16)
+        AES_192 = (24, 16)
+        AES_256 = (32, 16)
 
     def __init__(self, key_len: KeyLen, tag_len=16):
         self.tag_len = tag_len
         super().__init__(*key_len.value)
+
+    def encrypted_len(self, text_len):
+        return self.key_len + text_len
 
     def encrypt(self, key, text):
         cipher = AES.new(key, mode=AES.MODE_EAX, mac_len=self.tag_len)

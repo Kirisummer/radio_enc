@@ -1,5 +1,8 @@
 class Cipher:
-    def generate_key(self):
+    def __init__(self, *args, **kwargs):
+        raise NotImplementedError()
+
+    def encrypted_len(self, text_len):
         raise NotImplementedError()
 
     def encrypt(self, key, text):

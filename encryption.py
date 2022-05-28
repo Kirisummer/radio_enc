@@ -1,41 +1,25 @@
-from cryptoutils import *
-from Crypto.Random import get_random_bytes
-from Crypto.Util.number import long_to_bytes
-from functools import cache
+from ciphers import Rsa, partition
 
-def get_max_payload_size(rsa_key):
-    modulo = len(long_to_bytes(rsa_key.n))
-    return modulo - 2 - 2 * SHA256_HASH_LEN
+def encrypt(key_cipher, key, key_hasher, ciphers, text):
+    payload = [key_hasher(key)]
+    ciphertext = text
+    for cipher in ciphers:
+        session_key = cipher.generate_key()
+        enc_key = key_cipher.encrypt(key, session_key)
+        ciphertext = cipher.encrypt(session_key, ciphertext)
+        payload.append(enc_key)
+    payload.append(ciphertext)
+    return b''.join(payload)
 
-def encrypt(pub_key, data):
-    symm_key, enc_key = generate_aes_key(pub_key, AES_KEY_LEN)
-    cipher = aes_encode(symm_key, data)
-    concat = b''.join((rsa_key_hash(pub_key), enc_key, cipher))
-    encoded = err_encode(concat)
-    return encoded
-
-def rsa_encode(pub_key, data):
-    dataview = memoryview(data)
-    max_part_size = get_max_payload_size(pub_key)
-    enc_parts = []
-
-    cipher = RSACipher.new(pub_key, hashAlgo=SHA256)
-    for start in range(0, len(data), max_part_size):
-        part = dataview[start: start + max_part_size]
-        enc_parts.append(cipher.encrypt(part))
-
-    return b''.join(enc_parts)
-
-def generate_aes_key(pub_key, length):
-    key = get_random_bytes(length)
-    return key, rsa_encode(pub_key, key)
-
-def aes_encode(symm_key, data):
-    cipher = AES.new(symm_key, AES.MODE_EAX, mac_len=AES_TAG_LEN)
-    nonce = cipher.nonce
-    ciphertext, tag = cipher.encrypt_and_digest(data)
-    return b''.join((nonce, tag, ciphertext))
-
-def err_encode(data):
-    return data
+def decrypt(key_cipher, key, key_hasher, ciphers, ciphertext):
+    actual_hash = key_hasher(key)
+    key_lens = [key_cipher.encrypted_len(cipher.key_len) for cipher in ciphers]
+    key_hash, *keys, ciphertext = partition(
+            ciphertext,
+            len(actual_hash),
+            *key_lens)
+    for cipher, enc_key in reversed(tuple(zip(ciphers, keys))):
+        session_key = key_cipher.decrypt(key, enc_key)
+        ciphertext = cipher.decrypt(session_key, ciphertext)
+    return ciphertext
 
