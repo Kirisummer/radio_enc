@@ -11,8 +11,7 @@ class Aes(SymmCipher):
         AES_256 = (32, 16)
 
     def __init__(self, key_len: KeyLen, tag_len=16):
-        self.tag_len = tag_len
-        super().__init__(*key_len.value)
+        super().__init__(*key_len.value, tag_len)
 
     def encrypted_len(self, text_len):
         return self.key_len + text_len
@@ -23,8 +22,7 @@ class Aes(SymmCipher):
         return b''.join((cipher.nonce, tag, ciphertext))
 
     def decrypt(self, key, ciphertext):
-        nonce, tag, ciphertext = \
-                            partition(ciphertext, self.nonce_len, self.tag_len)
+        nonce, tag, ciphertext = self._partition(ciphertext)
         cipher = AES.new(key, mode=AES.MODE_EAX, nonce=nonce)
         text = cipher.decrypt(ciphertext)
         cipher.verify(tag)

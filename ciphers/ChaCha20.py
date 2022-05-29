@@ -3,6 +3,7 @@ from Crypto.Random import get_random_bytes
 from enum import Enum
 
 from .cryptoutils import partition
+from .hashes import HashAlgo
 from .SymmCipher import SymmCipher
 
 class ChaCha20(SymmCipher):
@@ -10,8 +11,8 @@ class ChaCha20(SymmCipher):
         B32_8 =  (32, 8)
         B32_12 = (32, 12)
 
-    def __init__(self, key_len: KeyLen):
-        super().__init__(*key_len.value)
+    def __init__(self, key_len: KeyLen, hmac_hash: HashAlgo):
+        super().__init__(*key_len.value, hmac_hash)
 
     def encrypted_len(self, text_len):
         return text_len + 8
@@ -20,11 +21,17 @@ class ChaCha20(SymmCipher):
         nonce = get_random_bytes(self.nonce_len)
         cipher = CHACHA20.new(key=key, nonce=nonce)
         ciphertext = cipher.encrypt(text)
+        if self.hash_algo:
+            tag = self.generate_tag(key, text)
+        else:
+            tag = b''
         return b''.join((cipher.nonce, ciphertext))
 
     def decrypt(self, key, ciphertext):
         nonce, ciphertext = partition(ciphertext, self.nonce_len)
         cipher = CHACHA20.new(key=key, nonce=nonce)
         text = cipher.decrypt(ciphertext)
+        if self.hash_algo:
+            self.verify(tag, key, text)
         return text
 

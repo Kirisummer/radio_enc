@@ -3,14 +3,15 @@ from enum import Enum
 
 from .cryptoutils import partition
 from .SymmCipher import SymmCipher
+from .hashes import HashAlgo
 
 class Salsa20(SymmCipher):
     class KeyLen(Enum):
         B16 = (16, 8)
         B32 = (32, 8)
 
-    def __init__(self, key_len: KeyLen):
-        super().__init__(*key_len.value)
+    def __init__(self, key_len: KeyLen, hmac_hash: HashAlgo = None):
+        super().__init__(*key_len.value, hmac_hash)
 
     def encrypted_len(self, text_len):
         return text_len + 8
@@ -18,11 +19,17 @@ class Salsa20(SymmCipher):
     def encrypt(self, key, text):
         cipher = SALSA20.new(key)
         ciphertext = cipher.encrypt(text)
-        return b''.join((cipher.nonce, ciphertext))
+        if self.hash_algo:
+            tag = self.generate_tag(key, text)
+        else:
+            tag = b''
+        return b''.join((cipher.nonce, tag, ciphertext))
 
     def decrypt(self, key, ciphertext):
-        nonce, ciphertext = partition(ciphertext, self.nonce_len)
+        nonce, tag, ciphertext = self._partition(ciphertext)
         cipher = SALSA20.new(key, nonce=nonce)
         text = cipher.decrypt(ciphertext)
+        if self.hash_algo:
+            self.verify(tag, key, text)
         return text
 
