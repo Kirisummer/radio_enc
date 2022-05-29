@@ -3,10 +3,10 @@ from Crypto.Random import get_random_bytes
 from enum import Enum
 
 from .cryptoutils import partition
+from .SalsaBase import SalsaBase
 from .hashes import HashAlgo
-from .SymmCipher import SymmCipher
 
-class ChaCha20(SymmCipher):
+class ChaCha20(SalsaBase):
     class KeyLen(Enum):
         B32_8 =  (32, 8)
         B32_12 = (32, 12)
@@ -25,10 +25,10 @@ class ChaCha20(SymmCipher):
             tag = self.generate_tag(key, text)
         else:
             tag = b''
-        return b''.join((cipher.nonce, ciphertext))
+        return b''.join((cipher.nonce, tag, ciphertext))
 
     def decrypt(self, key, ciphertext):
-        nonce, ciphertext = partition(ciphertext, self.nonce_len)
+        nonce, tag, ciphertext = self._partition(ciphertext)
         cipher = CHACHA20.new(key=key, nonce=nonce)
         text = cipher.decrypt(ciphertext)
         if self.hash_algo:

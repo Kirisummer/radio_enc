@@ -1,7 +1,10 @@
+from Crypto.Hash import HMAC
+
+from .hashes import HashAlgo
 from .SymmCipher import SymmCipher
 
 class SalsaBase(SymmCipher):
-    def __init__(self, key_len, nonce_len, hmac_hash: Algo = None):
+    def __init__(self, key_len, nonce_len, hmac_hash: HashAlgo = None):
         if hmac_hash:
             self.hash_algo = hmac_hash.factory
             hash_len = hmac_hash.hash_len

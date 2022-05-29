@@ -2,10 +2,10 @@ from Crypto.Cipher import Salsa20 as SALSA20
 from enum import Enum
 
 from .cryptoutils import partition
-from .SymmCipher import SymmCipher
+from .SalsaBase import SalsaBase
 from .hashes import HashAlgo
 
-class Salsa20(SymmCipher):
+class Salsa20(SalsaBase):
     class KeyLen(Enum):
         B16 = (16, 8)
         B32 = (32, 8)
