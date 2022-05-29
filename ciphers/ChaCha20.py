@@ -1,4 +1,5 @@
 from Crypto.Cipher import ChaCha20 as CHACHA20
+from Crypto.Random import get_random_bytes
 from enum import Enum
 
 from .cryptoutils import partition
@@ -16,13 +17,14 @@ class ChaCha20(SymmCipher):
         return text_len + 8
 
     def encrypt(self, key, text):
-        cipher = CHACHA20.new(key)
+        nonce = get_random_bytes(self.nonce_len)
+        cipher = CHACHA20.new(key=key, nonce=nonce)
         ciphertext = cipher.encrypt(text)
         return b''.join((cipher.nonce, ciphertext))
 
     def decrypt(self, key, ciphertext):
         nonce, ciphertext = partition(ciphertext, self.nonce_len)
-        cipher = CHACHA20.new(key, nonce=nonce)
+        cipher = CHACHA20.new(key=key, nonce=nonce)
         text = cipher.decrypt(ciphertext)
         return text
 
