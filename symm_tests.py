@@ -2,7 +2,7 @@ from Crypto.Random import get_random_bytes
 from collections import deque
 from time import perf_counter_ns
 
-def timer(label, preaction, action, postaction, times):
+def timer(preaction, action, postaction, times):
     records = []
     for i in range(times):
         preaction()
@@ -10,10 +10,9 @@ def timer(label, preaction, action, postaction, times):
         action()
         records.append(perf_counter_ns() - start)
         postaction()
-    avg = sum(records) // len(records)
-    print(f'{label} over {times} time(s):\t{avg} ns')
+    return sum(records) // len(records)
 
-def test_symmetric(name, cipher, data, times):
+def test_time(cipher, data, times):
     keys = deque()
     encrypted_queue = deque()
 
@@ -36,14 +35,16 @@ def test_symmetric(name, cipher, data, times):
     def nop():
         pass
 
-    # Run actions first for JIT to compile the actions
-    gen_key()
-    encrypt()
-    decrypt()
-    remove_key()
+    # Run actions for JIT to compile the actions
+    for i in range(50):
+        gen_key()
+        encrypt()
+        decrypt()
+        remove_key()
 
-    timer(f'Encyption ({name})', gen_key, encrypt, nop, times)
-    timer(f'Decryption ({name})', nop, decrypt, remove_key, times)
+    enc_time = timer(gen_key, encrypt, nop, times)
+    dec_time = timer(nop, decrypt, remove_key, times)
+    return enc_time, dec_time
 
 from ciphers import Aes, Salsa20, ChaCha20
 from ciphers import SHA224, SHA256, SHA512, SHA512_224, SHA512_256
@@ -53,12 +54,16 @@ data_size = int(sys.argv[1])
 times = int(sys.argv[2])
 data = get_random_bytes(data_size)
 
-hashes = (SHA224, SHA256, SHA512, SHA512_224, SHA512_256)
+hashes = (None, SHA224, SHA256, SHA512, SHA512_224, SHA512_256)
+
+def cipher_name(cipher, key_len, hash_algo):
+    parts = [cipher.__name__, f'{key_len.value[0]}/{key_len.value[1]}']
+    if hash_algo:
+        parts.append(hash_algo.name)
+    return '-'.join(parts)
 
 ciphers = {
-        f'Salsa20-{key_len.value[0]}b-'
-        f'{hash_algo.name if hash is not None else None}':
-        cipher(key_len, hash_algo)
+        cipher_name(cipher, key_len, hash_algo): cipher(key_len, hash_algo)
         for cipher in (Salsa20, ChaCha20)
         for key_len in cipher.KeyLen
         for hash_algo in hashes
@@ -69,6 +74,8 @@ ciphers.update({
         'AES256': Aes(Aes.KeyLen.AES_256),
 })
 
-for name, cipher in ciphers.items():
-    test_symmetric(name, cipher, data, times)
+results = ((name, test_time(cipher, data, times)) for name, cipher in ciphers.items())
+
+for name, (enc, dec) in results:
+    print(name, enc, dec, sep='\t')
 
