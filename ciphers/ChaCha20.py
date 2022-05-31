@@ -11,7 +11,7 @@ class ChaCha20(SalsaBase):
         B32_8 =  (32, 8)
         B32_12 = (32, 12)
 
-    def __init__(self, key_len: KeyLen, hmac_hash: HashAlgo):
+    def __init__(self, key_len: KeyLen, hmac_hash: HashAlgo = None):
         super().__init__(*key_len.value, hmac_hash)
 
     def encrypted_len(self, text_len):
