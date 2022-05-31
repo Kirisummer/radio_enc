@@ -1,6 +1,6 @@
-import audioconf
-from recorder import record_sound
-from transmission import write_file
+import utils.audioconf
+from utils.recorder import record_sound
+from utils.write_files import write_file
 from ciphers import Rsa, Aes, Salsa20, SHA256
 from encryption import encrypt, decrypt
 
@@ -9,7 +9,7 @@ import sys
 import timeit
 
 def main(seconds):
-    audioconf.init()
+    utils.audioconf.init()
 
     data = record_sound(seconds)
 
@@ -27,7 +27,7 @@ def main(seconds):
             (Salsa20(Salsa20.KeyLen.B32), Aes(Aes.KeyLen.AES_128)),
             'RSA_Salsa_Aes128')
 
-    audioconf.terminate()
+    utils.audioconf.terminate()
 
 def benchmark(data, key_cipher, key, key_hash, ciphers, out_name):
     print('#', out_name, '###########################################')
